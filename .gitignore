@@ -5,7 +5,6 @@ target/
 !**/src/test/**/target/
 .trae/
 .agent
-.kiro
 .trae
 ### STS ###
 .apt_generated
