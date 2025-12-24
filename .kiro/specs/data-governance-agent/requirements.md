@@ -1,90 +1,83 @@
-# 数据治理智能体需求文档
+# Requirements Document
 
-## 简介
+## Introduction
 
-数据治理智能体是一个专门为数据治理部门设计的智能化系统，旨在自动化和优化数据治理流程，提升数据质量管理效率，并为数据治理决策提供智能支持。该系统将整合数据质量监控、元数据管理、数据血缘分析、合规性检查等核心数据治理功能。
+数据治理智能体（Data Governance Agent）是一个面向数据中心的智能助手系统，旨在解决当前数据中心服务流程中的核心痛点。该智能体覆盖从任务下发（UMPS）、爬虫采集（SPIDER）、数据生产（data-producer）到数据清洗（data-flow）的完整链路，提供异常诊断、数据质检、流程监控和知识查询等能力。
 
-## 术语表
+需要说明的是，数据治理团队只负责任务的接收和下发、采集数据的清洗，不负责数据的具体采集。
 
-- **数据治理智能体 (Data_Governance_Agent)**: 专门服务于数据治理部门的智能化系统
-- **数据质量监控系统 (Data_Quality_Monitor)**: 负责实时监控和评估数据质量的子系统
-- **元数据管理系统 (Metadata_Management_System)**: 管理和维护数据元信息的系统
-- **数据血缘分析器 (Data_Lineage_Analyzer)**: 追踪和分析数据流转路径的组件
-- **合规性检查器 (Compliance_Checker)**: 验证数据处理是否符合法规要求的模块
-- **数据治理仪表板 (Governance_Dashboard)**: 展示数据治理状态和指标的可视化界面
-- **智能推荐引擎 (Recommendation_Engine)**: 基于历史数据和规则提供治理建议的AI组件
-- **数据分类器 (Data_Classifier)**: 自动识别和分类数据敏感级别的组件
+## Glossary
 
-## 需求
+- **UMPS**: 统一任务管理平台服务，负责接收和下发采集任务
+- **SPIDER**: 爬虫服务，负责从目标平台采集数据
+- **data-producer**: 数据生产服务，将采集的原始数据生产到Kafka
+- **data-flow**: 数据清洗服务，负责ETL处理并将数据沉淀到清洗库
+- **Origin Mongo**: 原始数据存储库，存放爬虫采集的原始数据
+- **Clean Mongo**: 清洗数据存储库，存放经过ETL处理后的沉淀数据
+- **Kafka**: 消息队列，用于服务间数据传输
+- **Redis**: 缓存服务，用于任务状态存储
+- **链路追踪**: 跨服务的请求追踪和问题定位能力
+- **数据质检**: 对数据结构和内容进行实时校验的能力
+- **智能体**: 基于AI的智能助手，能够理解用户意图并执行相应操作
 
-### 需求 1
+## Requirements
 
-**用户故事:** 作为数据治理专员，我希望系统能够自动监控数据质量，以便及时发现和处理数据质量问题
+### Requirement 1: 链路异常诊断
 
-#### 验收标准
+**User Story:** 作为运维人员，我希望能够快速定位整个数据链路中的异常点，以便缩短服务恢复时间。
 
-1. WHEN 数据源发生变化时，THE Data_Quality_Monitor SHALL 在5分钟内检测到数据质量变化
-2. WHEN 数据质量指标低于预设阈值时，THE Data_Governance_Agent SHALL 自动生成告警通知并发送给相关责任人
-3. WHEN 数据质量问题被检测到时，THE Data_Governance_Agent SHALL 记录问题详情并提供初步的修复建议
-4. WHEN 用户查询数据质量报告时，THE Data_Governance_Agent SHALL 生成包含趋势分析和异常标注的可视化报告
-5. WHEN 数据质量规则需要更新时，THE Data_Governance_Agent SHALL 支持规则的动态配置和实时生效
+#### Acceptance Criteria
 
-### 需求 2
+1. WHEN 用户查询某个任务的执行状态 THEN Data_Governance_Agent SHALL 展示该任务在UMPS、SPIDER、data-producer、data-flow各节点的状态信息
+2. WHEN 链路中某个服务发生异常 THEN Data_Governance_Agent SHALL 自动识别异常服务并提供异常详情
+3. WHEN 用户请求诊断某个失败任务 THEN Data_Governance_Agent SHALL 提供从任务下发到数据清洗的完整链路追踪信息
+4. WHEN 用户描述异常现象 THEN Data_Governance_Agent SHALL 基于历史案例和当前状态给出可能的原因分析
+5. IF 异常涉及多个服务 THEN Data_Governance_Agent SHALL 按时间顺序展示异常传播路径
 
-**用户故事:** 作为数据架构师，我希望系统能够自动管理元数据，以便更好地理解和管理企业数据资产
+### Requirement 2: 数据结构变化感知与质检
 
-#### 验收标准
+**User Story:** 作为数据治理人员，我希望能够实时感知采集数据结构的变化，以便在问题暴露给下游客户之前及时处理。
 
-1. WHEN 新的数据源接入时，THE Metadata_Management_System SHALL 自动发现并采集元数据信息
-2. WHEN 数据结构发生变化时，THE Metadata_Management_System SHALL 自动更新相关元数据并记录变更历史
-3. WHEN 用户搜索数据资产时，THE Data_Governance_Agent SHALL 基于元数据提供智能搜索和推荐功能
-4. WHEN 元数据需要标准化时，THE Data_Governance_Agent SHALL 自动识别并建议数据标准化方案
-5. WHEN 数据血缘关系发生变化时，THE Data_Lineage_Analyzer SHALL 自动更新血缘图谱
+#### Acceptance Criteria
 
-### 需求 3
+1. WHEN 采集数据的字段结构发生变化 THEN Data_Governance_Agent SHALL 在数据入库前检测到该变化并发出告警
+2. WHEN 检测到新增字段 THEN Data_Governance_Agent SHALL 记录新字段信息并通知相关人员
+3. WHEN 检测到字段缺失 THEN Data_Governance_Agent SHALL 标记该数据为异常并阻止其流入下游
+4. WHEN 检测到字段类型变化 THEN Data_Governance_Agent SHALL 评估影响范围并生成变更报告
+5. WHEN 用户查询某个数据源的结构变化历史 THEN Data_Governance_Agent SHALL 展示该数据源的字段变更时间线
 
-**用户故事:** 作为合规官，我希望系统能够自动进行合规性检查，以确保数据处理符合相关法规要求
+### Requirement 3: 数据流进度监控
 
-#### 验收标准
+**User Story:** 作为数据治理人员，我希望能够实时了解数据流的具体进度和统计信息，以便掌握整体运行状况。
 
-1. WHEN 数据处理流程启动时，THE Compliance_Checker SHALL 自动验证是否符合GDPR、CCPA等法规要求
-2. WHEN 敏感数据被访问时，THE Data_Governance_Agent SHALL 记录访问日志并验证访问权限的合规性
-3. WHEN 数据跨境传输时，THE Compliance_Checker SHALL 验证传输的合规性并生成合规报告
-4. WHEN 合规规则更新时，THE Data_Governance_Agent SHALL 自动应用新规则并重新评估现有数据的合规状态
-5. WHEN 合规审计需要时，THE Data_Governance_Agent SHALL 生成完整的合规审计报告
+#### Acceptance Criteria
 
-### 需求 4
+1. WHEN 用户查询任务执行进度 THEN Data_Governance_Agent SHALL 展示任务在各阶段的处理数量和耗时
+2. WHEN 用户查询某时间段的数据统计 THEN Data_Governance_Agent SHALL 提供任务数、采集量、清洗量等汇总信息
+3. WHEN 数据处理出现积压 THEN Data_Governance_Agent SHALL 识别积压节点并估算恢复时间
+4. WHILE 任务正在执行 THEN Data_Governance_Agent SHALL 提供实时的处理进度百分比
+5. WHEN 用户订阅某类任务的进度 THEN Data_Governance_Agent SHALL 在关键节点主动推送状态更新
 
-**用户故事:** 作为数据治理经理，我希望系统能够提供智能化的治理建议，以优化数据治理策略和流程
+### Requirement 4: 知识库与能力查询
 
-#### 验收标准
+**User Story:** 作为开发人员，我希望能够快速查询数据中心的API信息、字段定义和能力边界，以便高效完成对接工作。
 
-1. WHEN 数据治理指标异常时，THE Recommendation_Engine SHALL 分析根因并提供具体的改进建议
-2. WHEN 新的数据治理需求出现时，THE Data_Governance_Agent SHALL 基于历史经验推荐最佳实践方案
-3. WHEN 数据治理成本需要优化时，THE Recommendation_Engine SHALL 分析当前资源使用情况并提供成本优化建议
-4. WHEN 数据治理流程需要改进时，THE Data_Governance_Agent SHALL 识别流程瓶颈并推荐自动化方案
-5. WHEN 数据治理策略需要调整时，THE Recommendation_Engine SHALL 基于业务变化提供策略调整建议
+#### Acceptance Criteria
 
-### 需求 5
+1. WHEN 用户查询某个服务的API信息 THEN Data_Governance_Agent SHALL 返回该服务的接口列表、参数说明和调用示例
+2. WHEN 用户查询某个集合的字段定义 THEN Data_Governance_Agent SHALL 展示原始集合和沉淀集合的完整字段结构
+3. WHEN 用户询问数据中心的能力边界 THEN Data_Governance_Agent SHALL 列出当前支持的数据源、清洗规则和输出格式
+4. WHEN 用户搜索对接文档 THEN Data_Governance_Agent SHALL 返回相关文档链接和关键内容摘要
+5. WHEN 用户查询清洗规则配置 THEN Data_Governance_Agent SHALL 展示当前生效的清洗流程和字段映射关系
 
-**用户故事:** 作为业务用户，我希望通过直观的界面与智能体交互，以便快速获取数据治理相关信息和服务
+### Requirement 5: 智能交互与扩展能力
 
-#### 验收标准
+**User Story:** 作为用户，我希望能够通过自然语言与智能体交互，并在智能体能力不足时获得替代方案。
 
-1. WHEN 用户访问治理仪表板时，THE Governance_Dashboard SHALL 显示实时的数据治理关键指标和状态概览
-2. WHEN 用户提出自然语言查询时，THE Data_Governance_Agent SHALL 理解查询意图并提供准确的回答
-3. WHEN 用户需要数据治理服务时，THE Data_Governance_Agent SHALL 通过对话式界面引导用户完成服务申请
-4. WHEN 用户需要查看数据血缘时，THE Data_Governance_Agent SHALL 生成交互式的数据血缘可视化图表
-5. WHEN 用户需要数据治理培训时，THE Data_Governance_Agent SHALL 提供个性化的学习路径和资源推荐
+#### Acceptance Criteria
 
-### 需求 6
-
-**用户故事:** 作为系统管理员，我希望智能体系统具有高可用性和可扩展性，以支持企业级的数据治理需求
-
-#### 验收标准
-
-1. WHEN 系统负载增加时，THE Data_Governance_Agent SHALL 自动扩展计算资源以维持服务性能
-2. WHEN 系统组件故障时，THE Data_Governance_Agent SHALL 自动切换到备用组件并记录故障信息
-3. WHEN 数据量大幅增长时，THE Data_Governance_Agent SHALL 支持水平扩展以处理更大规模的数据
-4. WHEN 系统需要维护时，THE Data_Governance_Agent SHALL 支持零停机时间的滚动更新
-5. WHEN 系统性能监控时，THE Data_Governance_Agent SHALL 提供详细的性能指标和健康状态报告
+1. WHEN 用户使用自然语言提问 THEN Data_Governance_Agent SHALL 理解用户意图并给出准确回答
+2. WHEN 智能体无法直接回答问题 THEN Data_Governance_Agent SHALL 提供相关的查询入口或操作指引
+3. WHEN 用户请求执行某个操作 THEN Data_Governance_Agent SHALL 在执行前确认操作内容和影响范围
+4. IF 请求超出智能体能力范围 THEN Data_Governance_Agent SHALL 说明限制原因并推荐替代的技术方案
+5. WHEN 用户反馈回答不准确 THEN Data_Governance_Agent SHALL 记录反馈并优化后续回答质量
